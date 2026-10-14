@@ -1,0 +1,19 @@
+# 此文件只保存经过信息安全/采购批准的公开来源；不放内部资料链接。
+lookback_hours: 28
+max_per_feed: 10
+candidate_limit: 45
+max_items: 8
+minimum_score: 6
+timezone: Asia/Macau
+
+# 只抓取 RSS/Atom，不爬取受限页面；生产时由团队维护 allow-list。
+feeds:
+  - name: OpenAI News
+    url: https://openai.com/news/rss.xml
+  - name: Google DeepMind
+    url: https://deepmind.google/blog/rss.xml
+  - name: Hugging Face Blog
+    url: https://huggingface.co/blog/feed.xml
+  - name: Google Research
+    url: https://research.google/blog/rss/
+
