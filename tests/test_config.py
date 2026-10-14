@@ -11,4 +11,3 @@ def test_config_rejects_no_sources():
 def test_config_rejects_invalid_item_limits():
     with pytest.raises(ValueError, match="max_items"):
         BriefingConfig(feeds=[Feed("approved", "https://example.test/feed")], max_items=9, candidate_limit=8).validate()
-

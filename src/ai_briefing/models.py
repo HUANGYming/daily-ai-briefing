@@ -24,4 +24,3 @@ class BriefItem:
     business_relevance: str
     category: str
     score: int
-

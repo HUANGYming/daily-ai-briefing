@@ -34,4 +34,3 @@ def send(subject: str, html: str, text: str, recipients: list[str]) -> None:
         server.login(os.environ["SMTP_USER"], os.environ["SMTP_PASSWORD"])
         server.send_message(message)
     print(f"[sent] AI briefing to {len(recipients)} recipient(s)")
-

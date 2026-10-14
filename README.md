@@ -44,4 +44,3 @@ pytest
 2. 确认 Qwen gateway 是仅限内网的 OpenAI-compatible endpoint，且日志不会记录完整请求或服务令牌。
 3. 先在 Airflow 以测试收件人手动触发一次，检查链接、英文摘要和 SMTP 审计记录。
 4. 再解除 DAG 的暂停状态；日常变更通过审核后的 `sources.yaml` 完成。
-

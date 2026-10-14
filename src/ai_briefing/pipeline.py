@@ -23,4 +23,3 @@ def run(config_path: str | Path, dry_run: bool = False) -> int:
         return len(briefing)
     send(mail_subject, email_html(briefing, now, config.timezone), text, recipients_from_env())
     return len(briefing)
-

@@ -71,4 +71,3 @@ def curate(items: list[NewsItem], minimum_score: int) -> list[BriefItem]:
         if brief and brief.score >= minimum_score:
             selected.append(brief)
     return sorted(selected, key=lambda item: item.score, reverse=True)
-

@@ -63,4 +63,3 @@ def collect(feeds: list[Feed], lookback_hours: int, max_per_feed: int, candidate
             if accepted >= max_per_feed:
                 break
     return sorted(collected, key=lambda item: item.published_at, reverse=True)[:candidate_limit]
-

@@ -47,4 +47,3 @@ def load_config(path: str | Path) -> BriefingConfig:
     )
     cfg.validate()
     return cfg
-

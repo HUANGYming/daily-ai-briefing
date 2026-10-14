@@ -43,4 +43,3 @@ def email_html(items: list[BriefItem], now: datetime, timezone: str) -> str:
         f'<h1 style="font-size:22px;margin:0;color:#102a43">Daily AI Intelligence</h1><p style="color:#607080;margin:6px 0 20px">{date} · Internal reference · Approved public sources</p>'
         f'{body}<footer style="padding-top:18px;color:#8895a7;font-size:12px">Summarised by the internal Qwen3.8-Next service; verify details against the original source.</footer></div>'
     )
-
