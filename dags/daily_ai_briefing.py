@@ -10,6 +10,7 @@ from datetime import timedelta
 
 import pendulum
 from airflow import DAG
+from airflow.exceptions import AirflowNotFoundException
 from airflow.hooks.base import BaseHook
 from airflow.models import Variable
 from airflow.providers.docker.operators.docker import DockerOperator
@@ -26,7 +27,7 @@ def _runtime_environment() -> dict[str, str]:
     recipients = Variable.get("AI_BRIEFING_RECIPIENTS", deserialize_json=True)
     if not isinstance(recipients, list) or not all(isinstance(value, str) for value in recipients):
         raise ValueError("AI_BRIEFING_RECIPIENTS must be a JSON array of email addresses")
-    return {
+    environment = {
         "QWEN_BASE_URL": Variable.get("AI_BRIEFING_QWEN_BASE_URL"),
         "QWEN_MODEL": Variable.get("AI_BRIEFING_QWEN_MODEL", default_var="Qwen3.8-Next"),
         "SMTP_HOST": str(smtp.host),
@@ -36,6 +37,15 @@ def _runtime_environment() -> dict[str, str]:
         "SMTP_FROM": str(smtp.extra_dejson.get("from", smtp.login)),
         "AI_BRIEFING_RECIPIENTS": ",".join(recipients),
     }
+    try:
+        tavily = BaseHook.get_connection("tavily")
+    except AirflowNotFoundException:
+        # The image gives a clear runtime error only if its search config is enabled.
+        pass
+    else:
+        if tavily.password:
+            environment["TAVILY_API_KEY"] = str(tavily.password)
+    return environment
 
 
 class InternalBriefingDockerOperator(DockerOperator):

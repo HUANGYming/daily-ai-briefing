@@ -14,6 +14,30 @@ class Feed:
 
 
 @dataclass(frozen=True)
+class SearchConfig:
+    enabled: bool = False
+    provider: str = "tavily"
+    queries: list[str] | None = None
+    max_results_per_query: int = 5
+    search_depth: str = "basic"
+    time_range: str = "day"
+
+    def validate(self) -> None:
+        if not self.enabled:
+            return
+        if self.provider != "tavily":
+            raise ValueError("当前仅支持 Tavily 搜索服务")
+        if not self.queries or not all(query.strip() for query in self.queries):
+            raise ValueError("启用搜索时必须至少配置一个 query")
+        if not 1 <= self.max_results_per_query <= 20:
+            raise ValueError("max_results_per_query 必须在 1 到 20 之间")
+        if self.search_depth not in {"basic", "advanced", "fast", "ultra-fast"}:
+            raise ValueError("search_depth 不受支持")
+        if self.time_range not in {"day", "week", "month", "year"}:
+            raise ValueError("time_range 不受支持")
+
+
+@dataclass(frozen=True)
 class BriefingConfig:
     feeds: list[Feed]
     lookback_hours: int = 28
@@ -22,6 +46,7 @@ class BriefingConfig:
     max_items: int = 8
     minimum_score: int = 6
     timezone: str = "Asia/Macau"
+    search: SearchConfig = SearchConfig()
 
     def validate(self) -> None:
         if not self.feeds:
@@ -31,11 +56,21 @@ class BriefingConfig:
         if not 0 <= self.minimum_score <= 10:
             raise ValueError("minimum_score 必须在 0 到 10 之间")
         ZoneInfo(self.timezone)
+        self.search.validate()
 
 
 def load_config(path: str | Path) -> BriefingConfig:
     raw = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
     feeds = [Feed(name=str(item["name"]), url=str(item["url"])) for item in raw.get("feeds", [])]
+    raw_search = raw.get("search", {}) or {}
+    search = SearchConfig(
+        enabled=bool(raw_search.get("enabled", False)),
+        provider=str(raw_search.get("provider", "tavily")),
+        queries=[str(query) for query in raw_search.get("queries", [])],
+        max_results_per_query=int(raw_search.get("max_results_per_query", 5)),
+        search_depth=str(raw_search.get("search_depth", "basic")),
+        time_range=str(raw_search.get("time_range", "day")),
+    )
     cfg = BriefingConfig(
         feeds=feeds,
         lookback_hours=int(raw.get("lookback_hours", 28)),
@@ -44,6 +79,7 @@ def load_config(path: str | Path) -> BriefingConfig:
         max_items=int(raw.get("max_items", 8)),
         minimum_score=int(raw.get("minimum_score", 6)),
         timezone=str(raw.get("timezone", "Asia/Macau")),
+        search=search,
     )
     cfg.validate()
     return cfg

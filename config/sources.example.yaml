@@ -16,3 +16,17 @@ feeds:
     url: https://huggingface.co/blog/feed.xml
   - name: Google Research
     url: https://research.google/blog/rss/
+
+# Optional Tavily candidate-discovery layer. Store its API key only in the
+# runtime environment/Airflow Connection, never in this file.
+search:
+  enabled: true
+  provider: tavily
+  max_results_per_query: 5
+  search_depth: basic
+  time_range: day
+  queries:
+    - major AI model or foundation model release
+    - AI research paper benchmark training or inference breakthrough
+    - open-source AI model agent or developer tool release
+    - AI inference infrastructure hardware or optimization announcement
