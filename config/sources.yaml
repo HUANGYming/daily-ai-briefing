@@ -1,0 +1,17 @@
+# This allow-list is versioned with each image. Changes require a new image build.
+lookback_hours: 28
+max_per_feed: 10
+candidate_limit: 45
+max_items: 8
+minimum_score: 6
+timezone: Asia/Macau
+
+feeds:
+  - name: OpenAI News
+    url: https://openai.com/news/rss.xml
+  - name: Google DeepMind
+    url: https://deepmind.google/blog/rss.xml
+  - name: Hugging Face Blog
+    url: https://huggingface.co/blog/feed.xml
+  - name: Google Research
+    url: https://research.google/blog/rss/

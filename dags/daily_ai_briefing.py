@@ -1,55 +1,55 @@
-"""Airflow DAG for the internal daily AI briefing.
+"""Run one immutable Daily AI Intelligence container from Airflow.
 
-Airflow setup (secrets are deliberately not stored in this repository):
-  - Connection `qwen_onprem`: host=your internal gateway host, password=service token,
-    extra={"scheme":"https", "path":"/v1", "model":"Qwen3.8-Next"}
-  - Connection `ai_briefing_smtp`: host, port, login, password, extra={"from":"..."}
-  - Variable `AI_BRIEFING_RECIPIENTS`: JSON list of internal distribution addresses
-  - Variable `AI_BRIEFING_CONFIG_PATH`: absolute path to approved sources.yaml on the worker
+The application dependencies stay inside the image. Airflow needs only the Docker
+provider, access to the Docker daemon, Connections for Qwen/SMTP, and Variables.
+No secret is baked into the image or DAG source.
 """
 from __future__ import annotations
 
-import os
-import sys
 from datetime import timedelta
-from pathlib import Path
 
 import pendulum
-from airflow.decorators import dag, task
+from airflow import DAG
 from airflow.hooks.base import BaseHook
 from airflow.models import Variable
+from airflow.providers.docker.operators.docker import DockerOperator
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
+IMAGE = Variable.get("AI_BRIEFING_IMAGE")
+DOCKER_NETWORK = Variable.get("AI_BRIEFING_DOCKER_NETWORK", default_var="bridge")
 
 
-def _inject_runtime_secrets() -> None:
+def _runtime_environment() -> dict[str, str]:
+    """Resolve credentials only when the task starts; never template or log them."""
     qwen = BaseHook.get_connection("qwen_onprem")
     smtp = BaseHook.get_connection("ai_briefing_smtp")
-    qwen_extra = qwen.extra_dejson
-    smtp_extra = smtp.extra_dejson
-    if not qwen.host or not qwen.password:
-        raise ValueError("qwen_onprem must include a host and service-token password")
+    if not qwen.password:
+        raise ValueError("qwen_onprem must include the Qwen service token as its password")
     if not smtp.host or not smtp.login or not smtp.password:
-        raise ValueError("ai_briefing_smtp must include host, login, and password")
-    scheme = qwen_extra.get("scheme", "https")
-    path = str(qwen_extra.get("path", "/v1")).strip("/")
-    qwen_port = f":{qwen.port}" if qwen.port else ""
-    os.environ["QWEN_BASE_URL"] = f"{scheme}://{qwen.host}{qwen_port}/{path}"
-    os.environ["QWEN_API_KEY"] = str(qwen.password)
-    os.environ["QWEN_MODEL"] = qwen_extra.get("model", "Qwen3.8-Next")
-    os.environ["SMTP_HOST"] = smtp.host
-    os.environ["SMTP_PORT"] = str(smtp.port or 587)
-    os.environ["SMTP_USER"] = str(smtp.login)
-    os.environ["SMTP_PASSWORD"] = str(smtp.password)
-    os.environ["SMTP_FROM"] = smtp_extra.get("from", smtp.login)
+        raise ValueError("ai_briefing_smtp requires host, login, and password")
     recipients = Variable.get("AI_BRIEFING_RECIPIENTS", deserialize_json=True)
     if not isinstance(recipients, list) or not all(isinstance(value, str) for value in recipients):
         raise ValueError("AI_BRIEFING_RECIPIENTS must be a JSON array of email addresses")
-    os.environ["AI_BRIEFING_RECIPIENTS"] = ",".join(recipients)
+    return {
+        "QWEN_BASE_URL": Variable.get("AI_BRIEFING_QWEN_BASE_URL"),
+        "QWEN_API_KEY": str(qwen.password),
+        "QWEN_MODEL": Variable.get("AI_BRIEFING_QWEN_MODEL", default_var="Qwen3.8-Next"),
+        "SMTP_HOST": str(smtp.host),
+        "SMTP_PORT": str(smtp.port or 587),
+        "SMTP_USER": str(smtp.login),
+        "SMTP_PASSWORD": str(smtp.password),
+        "SMTP_FROM": str(smtp.extra_dejson.get("from", smtp.login)),
+        "AI_BRIEFING_RECIPIENTS": ",".join(recipients),
+    }
 
 
-@dag(
+class InternalBriefingDockerOperator(DockerOperator):
+    """Inject Connection secrets into the container without exposing template values."""
+
+    def execute(self, context):
+        self.private_environment = _runtime_environment()
+        return super().execute(context)
+
+with DAG(
     dag_id="daily_ai_briefing",
     description="Public AI intelligence digest for internal AI team",
     schedule="0 8 * * 1-5",
@@ -57,18 +57,16 @@ def _inject_runtime_secrets() -> None:
     catchup=False,
     default_args={"owner": "ai-in-house", "retries": 2, "retry_delay": timedelta(minutes=10)},
     max_active_runs=1,
-    tags=["ai", "internal", "email"],
-)
-def daily_ai_briefing():
-    @task
-    def generate_and_send() -> int:
-        _inject_runtime_secrets()
-        from ai_briefing.pipeline import run
-
-        config_path = Variable.get("AI_BRIEFING_CONFIG_PATH")
-        return run(config_path)
-
-    generate_and_send()
-
-
-daily_ai_briefing()
+    tags=["ai", "internal", "docker", "email"],
+) as dag:
+    run_briefing = InternalBriefingDockerOperator(
+        task_id="generate_and_send",
+        image=IMAGE,
+        command=["--config", "/app/config/sources.yaml"],
+        docker_conn_id="docker_default",
+        auto_remove="success",
+        mount_tmp_dir=False,
+        force_pull=False,
+        network_mode=DOCKER_NETWORK,
+        execution_timeout=timedelta(minutes=20),
+    )
