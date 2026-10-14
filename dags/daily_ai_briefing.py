@@ -20,10 +20,7 @@ DOCKER_NETWORK = Variable.get("AI_BRIEFING_DOCKER_NETWORK", default_var="bridge"
 
 def _runtime_environment() -> dict[str, str]:
     """Resolve credentials only when the task starts; never template or log them."""
-    qwen = BaseHook.get_connection("qwen_onprem")
     smtp = BaseHook.get_connection("ai_briefing_smtp")
-    if not qwen.password:
-        raise ValueError("qwen_onprem must include the Qwen service token as its password")
     if not smtp.host or not smtp.login or not smtp.password:
         raise ValueError("ai_briefing_smtp requires host, login, and password")
     recipients = Variable.get("AI_BRIEFING_RECIPIENTS", deserialize_json=True)
@@ -31,7 +28,6 @@ def _runtime_environment() -> dict[str, str]:
         raise ValueError("AI_BRIEFING_RECIPIENTS must be a JSON array of email addresses")
     return {
         "QWEN_BASE_URL": Variable.get("AI_BRIEFING_QWEN_BASE_URL"),
-        "QWEN_API_KEY": str(qwen.password),
         "QWEN_MODEL": Variable.get("AI_BRIEFING_QWEN_MODEL", default_var="Qwen3.8-Next"),
         "SMTP_HOST": str(smtp.host),
         "SMTP_PORT": str(smtp.port or 587),

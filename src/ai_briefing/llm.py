@@ -20,10 +20,13 @@ Do not invent facts, numbers, sources, or links. Return only a JSON object match
 
 def _client_from_env() -> tuple[OpenAI, str]:
     base_url = os.environ.get("QWEN_BASE_URL")
-    api_key = os.environ.get("QWEN_API_KEY")
+    # vLLM permits unauthenticated OpenAI-compatible endpoints. The SDK still
+    # requires a non-empty value at construction time, so use a harmless dummy
+    # value when no gateway token has been configured.
+    api_key = os.environ.get("QWEN_API_KEY") or "vllm-no-auth"
     model = os.environ.get("QWEN_MODEL", "Qwen3.8-Next")
-    if not base_url or not api_key:
-        raise RuntimeError("QWEN_BASE_URL 和 QWEN_API_KEY 必须由运行环境提供")
+    if not base_url:
+        raise RuntimeError("QWEN_BASE_URL 必须由运行环境提供")
     return OpenAI(base_url=base_url.rstrip("/"), api_key=api_key), model
 
 
