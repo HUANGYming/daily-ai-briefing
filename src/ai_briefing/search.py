@@ -83,7 +83,8 @@ def _brave_request(query: str, api_key: str) -> list[dict[str, Any]]:
 def _tavily_items(config: SearchConfig) -> list[NewsItem]:
     api_key = os.environ.get("TAVILY_API_KEY")
     if not api_key:
-        raise RuntimeError("已启用 Tavily 搜索，但未设置 TAVILY_API_KEY")
+        print("[warn] Tavily enabled but TAVILY_API_KEY is not set; skipping Tavily")
+        return []
     items: list[NewsItem] = []
     for query in config.queries or []:
         try:
@@ -111,7 +112,8 @@ def _tavily_items(config: SearchConfig) -> list[NewsItem]:
 def _brave_items(config: SearchConfig) -> list[NewsItem]:
     api_key = os.environ.get("BRAVE_SEARCH_API_KEY")
     if not api_key:
-        raise RuntimeError("已启用 Brave 搜索，但未设置 BRAVE_SEARCH_API_KEY")
+        print("[warn] Brave enabled but BRAVE_SEARCH_API_KEY is not set; skipping Brave")
+        return []
     items: list[NewsItem] = []
     for query in config.queries or []:
         try:

@@ -29,3 +29,14 @@ def test_brave_results_become_news_items(monkeypatch):
     items = search.collect(config)
     assert items[0].source == "Brave · example.test"
     assert items[0].excerpt == "Relevant public evidence. A second snippet."
+
+
+def test_missing_provider_key_skips_only_that_provider(monkeypatch):
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    monkeypatch.setenv("BRAVE_SEARCH_API_KEY", "test-key")
+    monkeypatch.setattr(search, "_brave_request", lambda *_: [{
+        "title": "Brave candidate", "url": "https://example.test/brave", "snippets": ["Evidence."],
+    }])
+    config = SearchConfig(enabled=True, providers=["tavily", "brave_llm_context"], queries=["AI update"])
+    items = search.collect(config)
+    assert [item.source for item in items] == ["Brave · example.test"]

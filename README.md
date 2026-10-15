@@ -45,8 +45,8 @@ Airflow worker 只需安装 `apache-airflow-providers-docker` 并可访问 Docke
 | --- | --- | --- |
 | Connection | `docker_default` | 指向 Airflow worker 可访问的 Docker daemon |
 | Connection | `ai_briefing_smtp` | 企业 SMTP host/port/login/password；extra：`{"from":"ai-briefing@internal.example"}` |
-| Connection | `tavily` | password=Tavily API key；启用 Tavily 搜索时需要 |
-| Connection | `brave` | password=Brave Search API key；启用 `brave_llm_context` 时需要 |
+| Connection | `tavily` | password=Tavily API key；缺失时自动跳过 Tavily，继续使用其他来源 |
+| Connection | `brave` | password=Brave Search API key；缺失时自动跳过 Brave，继续使用其他来源 |
 | Variable | `AI_BRIEFING_IMAGE` | 完整、不可变 image tag，例如 `registry.internal.example/ai/daily-ai-briefing:2026.10.14-1` |
 | Variable | `AI_BRIEFING_QWEN_BASE_URL` | vLLM 的完整 OpenAI-compatible endpoint，必须以 `/v1` 结尾，例如 `http://qwen-vllm.internal:8000/v1` |
 | Variable | `AI_BRIEFING_QWEN_MODEL` | vLLM 的 `--served-model-name`；默认 `Qwen3.8-Next` |
@@ -54,6 +54,8 @@ Airflow worker 只需安装 `apache-airflow-providers-docker` 并可访问 Docke
 | Variable | `AI_BRIEFING_DOCKER_NETWORK` | 可选；Docker 网络名，默认 `bridge`。内网服务需使用可达网络。 |
 
 默认排程是澳门时间工作日 08:00（DAG 明确设定为 `Asia/Macau` 时区）。DAG 使用 `max_active_runs=1` 并在失败时重试两次，避免重复并发投递。`auto_remove="success"` 会在成功后删除容器；失败容器会保留，便于排查。
+
+搜索服务按“尽力而为”运行：Tavily 或 Brave 缺少 key、超时或返回错误时，会在日志记录 warning 并自动退回另一家搜索服务或 RSS-only 日报，不会阻断邮件。
 
 ## 上线前检查
 
