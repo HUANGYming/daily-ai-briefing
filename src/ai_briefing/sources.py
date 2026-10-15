@@ -57,7 +57,7 @@ def collect(feeds: list[Feed], lookback_hours: int, max_per_feed: int, candidate
             seen.add(key)
             collected.append(NewsItem(
                 source=feed.name, title=title, url=url, published_at=published_at,
-                excerpt=_clean(entry.get("summary", entry.get("description", ""))),
+                excerpt=_clean(entry.get("summary", entry.get("description", ""))), providers=frozenset({"rss"}),
             ))
             accepted += 1
             if accepted >= max_per_feed:

@@ -105,6 +105,7 @@ def _tavily_items(config: SearchConfig) -> list[NewsItem]:
                 url=url,
                 published_at=_published_at(result.get("published_date")),
                 excerpt=str(result.get("content", "")).strip()[:700],
+                providers=frozenset({"tavily"}),
             ))
     return items
 
@@ -136,6 +137,7 @@ def _brave_items(config: SearchConfig) -> list[NewsItem]:
                 url=url,
                 published_at=datetime.now(timezone.utc),
                 excerpt=excerpt,
+                providers=frozenset({"brave"}),
             ))
     return items
 

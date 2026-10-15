@@ -11,6 +11,7 @@ class NewsItem:
     url: str
     published_at: datetime
     excerpt: str = ""
+    providers: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,7 @@ class BriefItem:
     published_at: datetime
     headline: str
     summary: str
-    business_relevance: str
     category: str
+    topic: str
     score: int
+    rank_score: float = 0.0

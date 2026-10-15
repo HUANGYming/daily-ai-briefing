@@ -57,6 +57,8 @@ Airflow worker 只需安装 `apache-airflow-providers-docker` 并可访问 Docke
 
 搜索服务按“尽力而为”运行：Tavily 或 Brave 缺少 key、超时或返回错误时，会在日志记录 warning 并自动退回另一家搜索服务或 RSS-only 日报，不会阻断邮件。
 
+日报先按规范 URL 合并三类来源，再由 Qwen 给出技术价值分数（0–10）。最终顺序为：技术价值 50%、来源可信度 20%、两个以上来源命中同一 URL 的交叉验证 15%、发布时间新鲜度 15%。随后按 Qwen 返回的事件标识去重，避免同一发布占据多条邮件。
+
 ## 上线前检查
 
 1. 由信息安全/法务确认 RSS allow-list、邮件分发组与保留策略。

@@ -5,7 +5,7 @@ from ai_briefing.render import email_html, plain_text
 
 
 ITEM = BriefItem("Official Lab", "Original", "https://example.test/a?x=1", datetime(2026, 1, 1, tzinfo=timezone.utc),
-                 "New model release", "Supports <b>untrusted HTML</b>", "Consider it for internal assistant evaluation.", "model", 9)
+                 "New model release", "Supports <b>untrusted HTML</b>", "model", "new-model-release", 9)
 
 
 def test_email_escapes_untrusted_model_content():

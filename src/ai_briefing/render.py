@@ -18,8 +18,6 @@ def plain_text(items: list[BriefItem], now: datetime, timezone: str) -> str:
         return "\n".join(lines + ["No AI developments met the briefing threshold in the past day."])
     for index, item in enumerate(items, 1):
         lines.extend([f"{index}. [{item.category}] {item.headline}", f"   {item.summary}"])
-        if item.business_relevance:
-            lines.append(f"   Team relevance: {item.business_relevance}")
         lines.extend([f"   Source: {item.source}", f"   {item.url}", ""])
     return "\n".join(lines).strip()
 
@@ -28,13 +26,11 @@ def email_html(items: list[BriefItem], now: datetime, timezone: str) -> str:
     date = now.astimezone(ZoneInfo(timezone)).strftime("%Y-%m-%d")
     cards = []
     for item in items:
-        relevance = (f'<p style="margin:7px 0 0;color:#445">Team relevance: {html.escape(item.business_relevance)}</p>'
-                     if item.business_relevance else "")
         cards.append(
             '<section style="padding:16px 0;border-bottom:1px solid #e6e9ee">'
             f'<div><span style="font-size:12px;color:#52677f">{html.escape(item.category)}</span> '
             f'<a href="{html.escape(item.url, quote=True)}" style="color:#1155a3;font-size:16px;font-weight:650;text-decoration:none">{html.escape(item.headline)}</a></div>'
-            f'<p style="margin:7px 0;color:#222;line-height:1.6">{html.escape(item.summary)}</p>{relevance}'
+            f'<p style="margin:7px 0;color:#222;line-height:1.6">{html.escape(item.summary)}</p>'
             f'<p style="margin:8px 0 0;color:#748091;font-size:12px">Source: {html.escape(item.source)} · public link</p></section>'
         )
     body = "".join(cards) or '<p style="color:#607080">No AI developments met the briefing threshold in the past day.</p>'

@@ -7,6 +7,7 @@ from .config import load_config
 from .emailer import recipients_from_env, send
 from .llm import curate
 from .render import email_html, plain_text, subject
+from .ranking import rank_and_deduplicate
 from .sources import canonical_url, collect
 
 
@@ -16,17 +17,25 @@ def run(config_path: str | Path, dry_run: bool = False) -> int:
     rss_candidates = collect(config.feeds, config.lookback_hours, config.max_per_feed, config.candidate_limit)
     from .search import collect as collect_search
     search_candidates = collect_search(config.search)
-    candidates = []
-    seen_urls: set[str] = set()
+    candidates_by_url = {}
     for item in sorted(rss_candidates + search_candidates, key=lambda item: item.published_at, reverse=True):
         url = canonical_url(item.url)
-        if url in seen_urls:
+        existing = candidates_by_url.get(url)
+        if existing:
+            # Preserve a single candidate but carry forward every independent
+            # retrieval channel that found the exact URL.
+            candidates_by_url[url] = existing.__class__(
+                source=existing.source,
+                title=existing.title,
+                url=existing.url,
+                published_at=min(existing.published_at, item.published_at),
+                excerpt=existing.excerpt if len(existing.excerpt) >= len(item.excerpt) else item.excerpt,
+                providers=existing.providers | item.providers,
+            )
             continue
-        seen_urls.add(url)
-        candidates.append(item)
-        if len(candidates) >= config.candidate_limit:
-            break
-    briefing = curate(candidates, config.minimum_score)[:config.max_items]
+        candidates_by_url[url] = item
+    candidates = sorted(candidates_by_url.values(), key=lambda item: item.published_at, reverse=True)[:config.candidate_limit]
+    briefing = rank_and_deduplicate(curate(candidates, config.minimum_score), candidates)[:config.max_items]
     mail_subject = subject(now, config.timezone)
     text = plain_text(briefing, now, config.timezone)
     if dry_run:
