@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -16,7 +16,7 @@ class Feed:
 @dataclass(frozen=True)
 class SearchConfig:
     enabled: bool = False
-    provider: str = "tavily"
+    providers: list[str] = field(default_factory=lambda: ["tavily"])
     queries: list[str] | None = None
     max_results_per_query: int = 5
     search_depth: str = "basic"
@@ -25,8 +25,11 @@ class SearchConfig:
     def validate(self) -> None:
         if not self.enabled:
             return
-        if self.provider != "tavily":
-            raise ValueError("当前仅支持 Tavily 搜索服务")
+        supported = {"tavily", "brave_llm_context"}
+        if not self.providers or any(provider not in supported for provider in self.providers):
+            raise ValueError("搜索服务仅支持 tavily 或 brave_llm_context")
+        if len(set(self.providers)) != len(self.providers):
+            raise ValueError("搜索服务不能重复配置")
         if not self.queries or not all(query.strip() for query in self.queries):
             raise ValueError("启用搜索时必须至少配置一个 query")
         if not 1 <= self.max_results_per_query <= 20:
@@ -65,7 +68,9 @@ def load_config(path: str | Path) -> BriefingConfig:
     raw_search = raw.get("search", {}) or {}
     search = SearchConfig(
         enabled=bool(raw_search.get("enabled", False)),
-        provider=str(raw_search.get("provider", "tavily")),
+        providers=[str(provider) for provider in raw_search.get(
+            "providers", [raw_search.get("provider", "tavily")]
+        )],
         queries=[str(query) for query in raw_search.get("queries", [])],
         max_results_per_query=int(raw_search.get("max_results_per_query", 5)),
         search_depth=str(raw_search.get("search_depth", "basic")),

@@ -21,7 +21,9 @@ feeds:
 # runtime environment/Airflow Connection, never in this file.
 search:
   enabled: true
-  provider: tavily
+  providers:
+    - tavily
+    - brave_llm_context
   max_results_per_query: 5
   search_depth: basic
   time_range: day

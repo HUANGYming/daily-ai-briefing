@@ -4,11 +4,11 @@
 
 ## 设计边界
 
-- 模型网关地址、收件人、SMTP 凭据和 Tavily key 只存在于 Airflow Connections/Variables 或部署环境，绝不提交到仓库。当前 vLLM 无认证部署不需要模型令牌。
+- 模型网关地址、收件人、SMTP 凭据、Tavily/Brave key 只存在于 Airflow Connections/Variables 或部署环境，绝不提交到仓库。当前 vLLM 无认证部署不需要模型令牌。
 - 输入仅限安全团队批准的公开源。程序不会上传内部运营数据、客户/会员资料、交易数据或赌场业务策略。
 - Prompt 将外部文章视为不可信内容，忽略其中的指令；邮件中提供原文链接，摘要不取代来源核验。
 - “团队参考”仅用于识别企业技术评估方向（例如知识助手、运维、数据安全）；不产生博彩策略、玩家画像、法律或监管建议。
-- Tavily 只接收预设的公开 AI 新闻查询；不要将内部项目名、运营数据、客户/会员信息或业务策略放进查询词。
+- Tavily 与 Brave 只接收预设的公开 AI 新闻查询；不要将内部项目名、运营数据、客户/会员信息或业务策略放进查询词。
 
 ## 快速开始
 
@@ -45,7 +45,8 @@ Airflow worker 只需安装 `apache-airflow-providers-docker` 并可访问 Docke
 | --- | --- | --- |
 | Connection | `docker_default` | 指向 Airflow worker 可访问的 Docker daemon |
 | Connection | `ai_briefing_smtp` | 企业 SMTP host/port/login/password；extra：`{"from":"ai-briefing@internal.example"}` |
-| Connection | `tavily` | password=Tavily API key；仅在 `search.enabled: true` 时需要 |
+| Connection | `tavily` | password=Tavily API key；启用 Tavily 搜索时需要 |
+| Connection | `brave` | password=Brave Search API key；启用 `brave_llm_context` 时需要 |
 | Variable | `AI_BRIEFING_IMAGE` | 完整、不可变 image tag，例如 `registry.internal.example/ai/daily-ai-briefing:2026.10.14-1` |
 | Variable | `AI_BRIEFING_QWEN_BASE_URL` | vLLM 的完整 OpenAI-compatible endpoint，必须以 `/v1` 结尾，例如 `http://qwen-vllm.internal:8000/v1` |
 | Variable | `AI_BRIEFING_QWEN_MODEL` | vLLM 的 `--served-model-name`；默认 `Qwen3.8-Next` |
@@ -58,5 +59,5 @@ Airflow worker 只需安装 `apache-airflow-providers-docker` 并可访问 Docke
 
 1. 由信息安全/法务确认 RSS allow-list、邮件分发组与保留策略。
 2. 确认 vLLM endpoint 仅限内网可达；即使当前无认证，也应通过 Docker 网络策略限制访问范围。
-3. 先在 Airflow 以测试收件人手动触发一次，检查 Docker task 日志、链接、英文摘要和 SMTP 审计记录。
+3. 先在 Airflow 以测试收件人手动触发一次，检查 Docker task 日志、双搜索源去重后的链接、英文摘要和 SMTP 审计记录。
 4. 将新 image tag 写入 `AI_BRIEFING_IMAGE`，再解除 DAG 的暂停状态。日常数据源或代码变更必须构建并发布新 image。

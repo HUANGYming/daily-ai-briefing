@@ -45,6 +45,13 @@ def _runtime_environment() -> dict[str, str]:
     else:
         if tavily.password:
             environment["TAVILY_API_KEY"] = str(tavily.password)
+    try:
+        brave = BaseHook.get_connection("brave")
+    except AirflowNotFoundException:
+        pass
+    else:
+        if brave.password:
+            environment["BRAVE_SEARCH_API_KEY"] = str(brave.password)
     return environment
 
 

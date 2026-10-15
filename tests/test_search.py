@@ -16,3 +16,16 @@ def test_tavily_results_become_news_items(monkeypatch):
     items = search.collect(config)
     assert items[0].source == "Tavily · example.test"
     assert items[0].published_at == datetime(2026, 10, 14, 10, tzinfo=timezone.utc)
+
+
+def test_brave_results_become_news_items(monkeypatch):
+    monkeypatch.setenv("BRAVE_SEARCH_API_KEY", "test-key")
+    monkeypatch.setattr(search, "_brave_request", lambda *_: [{
+        "title": "AI infrastructure update",
+        "url": "https://example.test/infrastructure",
+        "snippets": ["Relevant public evidence.", "A second snippet."],
+    }])
+    config = SearchConfig(enabled=True, providers=["brave_llm_context"], queries=["AI infrastructure"])
+    items = search.collect(config)
+    assert items[0].source == "Brave · example.test"
+    assert items[0].excerpt == "Relevant public evidence. A second snippet."
