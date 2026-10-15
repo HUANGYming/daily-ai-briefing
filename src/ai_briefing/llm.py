@@ -53,7 +53,7 @@ def curate(items: list[NewsItem], minimum_score: int) -> list[BriefItem]:
     instruction = (
         "Review this public-news input. Return JSON: {\"items\":[{\"id\":0,\"headline\":\"...\","
         "\"summary\":\"one English sentence, max 35 words\","
-        "\"category\":\"model|research|tooling|infrastructure|governance|product\","
+        "\"category\":\"model|research|agent|infrastructure|governance|product\","
         "\"topic\":\"event-slug\",\"score\":0}]}. "
         "An item can be omitted.\n\n" + json.dumps(payload, ensure_ascii=False)
     )
